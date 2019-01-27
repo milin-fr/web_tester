@@ -73,31 +73,50 @@ def go_to(driver, line_number, language):
     for tag in list_of_language_tags:
         if tag in page_link:
             page_link = page_link.replace(tag, language)
+    insert_text("Opening the " + page_link)
     driver.get(page_link)
+    time.sleep(1)
 
 def click_element(driver, line_number):
+    time.sleep(3)
     element_to_click = dictionary_of_action_input_per_row[line_number].get()
+    insert_text("Clicking element with Xpath: " + element_to_click)
     driver.find_element_by_xpath(element_to_click).click()
 
 def scroll_to(driver, line_number):
     #actions = ActionChains(driver)
+    time.sleep(3)
     element_to_scroll_to = dictionary_of_action_input_per_row[line_number].get()
+    insert_text("Scrolling to element with Xpath: " + element_to_scroll_to)
     element = driver.find_element_by_xpath(element_to_scroll_to)
     driver.execute_script("arguments[0].scrollIntoView();", element)
 
-def enter_text(input_text):
-    SendKeys(input_text, pause = 0.1)
+def get_last_clicked_xpath():
+    last_clicked_xpath = ""
+    for i in range(row_counter):
+        if dictionary_of_action_selector_variable_per_row[i].get() == "Click element":
+            last_clicked_xpath = dictionary_of_action_input_per_row[i].get()
+    return last_clicked_xpath
+
+def enter_text(driver, line_number):
+    last_clicked_xpath = get_last_clicked_xpath()
+    input_text = dictionary_of_action_input_per_row[line_number].get()
+    insert_text("Typing " + '"' + input_text + '"' + " in element " + '"' + last_clicked_xpath + '"')
+    driver.find_element_by_xpath(last_clicked_xpath).send_keys(input_text)
 
 def create_browser():
     options = webdriver.ChromeOptions()
     if display_browser_var.get() == 0:
         options.add_argument('headless')
+        insert_text("Browser is in hidden mode.")
     options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36")
     driver = webdriver.Chrome(options=options)
     driver.set_window_size(1920, 1080)
     return driver
 
-def take_screenshot(driver, screenshot_name):
+def take_screenshot(driver, line_number, language):
+    screenshot_name = dictionary_of_action_input_per_row[line_number].get() + "_" + language[1:] + ".png"
+    insert_text("Taking screenshot: " + screenshot_name)
     driver.save_screenshot(screenshot_name)
 
 def single_action(driver, line_number, language):
@@ -108,16 +127,16 @@ def single_action(driver, line_number, language):
     if dictionary_of_action_selector_variable_per_row[line_number].get() == "Scroll to":
         scroll_to(driver, line_number)
     if dictionary_of_action_selector_variable_per_row[line_number].get() == "Enter text":
-        input_text = dictionary_of_action_input_per_row[line_number].get()
-        enter_text(input_text)
+        enter_text(driver, line_number)
     if dictionary_of_action_selector_variable_per_row[line_number].get() == "Take screenshot":
-        screenshot_name = dictionary_of_action_input_per_row[line_number].get() + "_" + language[1:] + ".png"
-        take_screenshot(driver, screenshot_name)
+        take_screenshot(driver, line_number, language)
     if dictionary_of_action_selector_variable_per_row[line_number].get() == "Wait":
         time_to_wait = eval(dictionary_of_action_input_per_row[line_number].get())
         try:
+            insert_text("Waiting " + str(time_to_wait) + " second(s).")
             time.sleep(time_to_wait)
         except:
+            insert_text("Waiting 1 second.")
             time.sleep(1)
 
 def get_the_list_of_languages():
@@ -141,12 +160,22 @@ def get_the_list_of_languages():
     return list_of_languages
 
 def perform_actions():
-    driver = create_browser()
     languages = get_the_list_of_languages()
-    for language in languages:
-        for line_number in range(row_counter):
-            single_action(driver, line_number, language)
-    driver.close()
+    if len(languages) == 0:
+        showinfo("Warning!", "Please, select at least one language")
+    else:
+        def slow_magic():
+            insert_text("Starting the process!")
+            insert_text("Please, don't interact with interface until done. You can minimize this window.")
+            driver = create_browser()
+            for language in languages:
+                for line_number in range(row_counter):
+                    insert_text("Performing step " + str(line_number + 1) + " for " + language[1:])
+                    single_action(driver, line_number, language)
+            driver.close()
+            showinfo("Done!", "You can check out the results.")
+        executing = Thread(target=slow_magic)
+        executing.start()
 
 def toggle_all_languages():
     if language_all_var.get() == 1:
@@ -167,6 +196,10 @@ def toggle_all_languages():
         language_pt_br_var.set(0)
         language_pl_pl_var.set(0)
         language_ru_ru_var.set(0)
+
+def insert_text(text):
+    text_box.insert('end', text)
+    text_box.see("end")
 
 main_window_of_gui = tkinter.Tk()
 main_window_of_gui.title("Screen-shooter WIP")
@@ -206,14 +239,25 @@ language_ru_ru_toggle = Checkbutton(main_window_of_gui, text="ru-RU", variable=l
 language_ru_ru_toggle.grid(row = 0, column = 7)
 
 display_browser_toggle = Checkbutton(main_window_of_gui, text="Display browser", variable=display_browser_var)
-display_browser_toggle.grid(row = 0, column = 16)
+display_browser_toggle.grid(row = 0, column = 10)
 
 button_add_action_row = Button(main_window_of_gui, text = "Add row", command = add_action_row)
-button_add_action_row.grid(row = 1, column = 15)
+button_add_action_row.grid(row = 1, column = 9)
 button_remove_action_row = Button(main_window_of_gui, text = "Remove row", command = remove_action_row)
-button_remove_action_row.grid(row = 1, column = 16)
+button_remove_action_row.grid(row = 1, column = 10)
 button_perform_actions = Button(main_window_of_gui, text = "Perform actions", height = 3, command = perform_actions)
-button_perform_actions.grid(row = 2, column = 15, rowspan = 3, columnspan = 2)
+button_perform_actions.grid(row = 2, column = 9, rowspan = 3, columnspan = 2)
+
+text_box = Listbox(main_window_of_gui, height=8)
+text_box.grid(column=0, row=100, columnspan=12, sticky=(N,W,E,S))  # columnspan − How many columns widgetoccupies; default 1.
+main_window_of_gui.grid_columnconfigure(0, weight=1)
+main_window_of_gui.grid_rowconfigure(12, weight=1)
+#scroll bar
+my_scrollbar = Scrollbar(main_window_of_gui, orient=VERTICAL, command=text_box.yview)
+my_scrollbar.grid(column=12, row=100, sticky=(N,S))
+#attaching scroll bar to text box
+text_box['yscrollcommand'] = my_scrollbar.set
+
 
 main_window_of_gui.mainloop()
 
