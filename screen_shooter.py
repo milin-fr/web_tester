@@ -12,11 +12,8 @@ import time
 import random
 import sys
 import tkinter
-from tkinter import Label
-from tkinter import Button
-from tkinter import Entry
-from tkinter import OptionMenu
-from tkinter import StringVar
+from tkinter import Label, Button, Entry, Checkbutton, OptionMenu
+from tkinter import StringVar, IntVar
 from tkinter import Listbox
 from tkinter import Scrollbar
 from tkinter import messagebox
@@ -42,6 +39,8 @@ dictionary_of_action_input_per_row = {}
 
 list_of_actions = ["Go to", "Click element", "Scroll to", "Enter text", "Take screenshot", "Wait"]
 
+#languages = ["/en-gb", "/de-de", "/fr-fr", "/es-es", "/it-it", "/pl-pl", "/pt-br", "/ru-ru"]
+
 
 def remove_action_row():
     #destroys all GUI elements (game selecetion and time selection buttons) created for given row
@@ -60,23 +59,31 @@ def add_action_row():
     dictionary_of_action_selector_variable_per_row[row_counter].set(list_of_actions[0])
     dictionary_of_action_selector_per_row[row_counter] = OptionMenu(main_window_of_gui, dictionary_of_action_selector_variable_per_row[row_counter], *list_of_actions)
     dictionary_of_action_selector_per_row[row_counter].config(width=13)
-    dictionary_of_action_selector_per_row[row_counter].grid(row = row_counter + 1, column = 0)
+    dictionary_of_action_selector_per_row[row_counter].grid(row = row_counter + 1, column = 0, columnspan = 2)
 
     dictionary_of_action_input_per_row[row_counter] = Entry(main_window_of_gui)
     dictionary_of_action_input_per_row[row_counter].config(width=55)
-    dictionary_of_action_input_per_row[row_counter].grid(row = row_counter + 1, column = 1)
+    dictionary_of_action_input_per_row[row_counter].grid(row = row_counter + 1, column = 2, columnspan = 7)
     row_counter += 1
 
-def go_to(driver, page_link):
+def go_to(driver, line_number, language):
+    list_of_language_tags = ["/en-us", "/en-gb", "/de-de", "/fr-fr", "/es-es", "/it-it", "/pl-pl", "/pt-br", "/ru-ru"]
+    page_link = dictionary_of_action_input_per_row[line_number].get()
+    page_link = page_link.lower()
+    for tag in list_of_language_tags:
+        if tag in page_link:
+            page_link = page_link.replace(tag, language)
     driver.get(page_link)
 
-def click_element(driver, element_to_click):
+def click_element(driver, line_number):
+    element_to_click = dictionary_of_action_input_per_row[line_number].get()
     driver.find_element_by_xpath(element_to_click).click()
 
-def scroll_to(driver, element_to_scroll_to):
-    actions = ActionChains(driver)
+def scroll_to(driver, line_number):
+    #actions = ActionChains(driver)
+    element_to_scroll_to = dictionary_of_action_input_per_row[line_number].get()
     element = driver.find_element_by_xpath(element_to_scroll_to)
-    actions.move_to_element(element).perform()
+    driver.execute_script("arguments[0].scrollIntoView();", element)
 
 def enter_text(input_text):
     SendKeys(input_text, pause = 0.1)
@@ -95,16 +102,11 @@ def take_screenshot(driver, screenshot_name):
 
 def single_action(driver, line_number, language):
     if dictionary_of_action_selector_variable_per_row[line_number].get() == "Go to":
-        page_link = dictionary_of_action_input_per_row[line_number].get()
-        page_link = page_link.lower()
-        page_link = page_link.replace("/en-gb", language)
-        go_to(driver, page_link)
+        go_to(driver, line_number, language)
     if dictionary_of_action_selector_variable_per_row[line_number].get() == "Click element":
-        element_to_click = dictionary_of_action_input_per_row[line_number].get()
-        click_element(driver, element_to_click)
+        click_element(driver, line_number)
     if dictionary_of_action_selector_variable_per_row[line_number].get() == "Scroll to":
-        element_to_scroll_to = dictionary_of_action_input_per_row[line_number].get()
-        scroll_to(driver, element_to_scroll_to)
+        scroll_to(driver, line_number)
     if dictionary_of_action_selector_variable_per_row[line_number].get() == "Enter text":
         input_text = dictionary_of_action_input_per_row[line_number].get()
         enter_text(input_text)
@@ -118,57 +120,94 @@ def single_action(driver, line_number, language):
         except:
             time.sleep(1)
 
-languages = ["/en-gb", "/de-de", "/fr-fr", "/es-es", "/it-it", "/pl-pl", "/pt-br", "/ru-ru"]
+def get_the_list_of_languages():
+    list_of_languages = []
+    if language_en_gb_var.get() == 1:
+        list_of_languages.append("/en-gb")
+    if language_de_de_var.get() == 1:
+        list_of_languages.append("/de-de")
+    if language_fr_fr_var.get() == 1:
+        list_of_languages.append("/fr-fr")
+    if language_es_es_var.get() == 1:
+        list_of_languages.append("/es-es")
+    if language_it_it_var.get() == 1:
+        list_of_languages.append("/it-it")
+    if language_pt_br_var.get() == 1:
+        list_of_languages.append("/pl-pl")
+    if language_pl_pl_var.get() == 1:
+        list_of_languages.append("/pt-br")
+    if language_ru_ru_var.get() == 1:
+        list_of_languages.append("/ru-ru")
+    return list_of_languages
 
 def perform_actions():
     driver = create_browser()
+    languages = get_the_list_of_languages()
     for language in languages:
         for line_number in range(row_counter):
             single_action(driver, line_number, language)
     driver.close()
 
-
-
-#page_to_screen = "https://eu.shop.battle.net/"
-
-#driver = webdriver.Chrome(options=options)
-
-#driver.set_window_size(1920, 1080)
-
-
-
-def take_screenshots():
-    driver.get(page_to_screen + languages[0])
-    time.sleep(5)
-    driver.find_element_by_xpath("""/html/body/storefront-root/storefront-home-page/div/main/storefront-family-bar/div/div/div[1]/div/storefront-link[1]/a""").click()
-    time.sleep(6)
-    driver.find_element_by_xpath("""//*[@id="group-link-services"]/span""").click()
-    time.sleep(7)
-    for language in languages:
-        driver.get(page_to_screen + language)
-        time.sleep(2)
-        driver.save_screenshot("landing_page_" + language + ".png")
-        time.sleep(1)
-        driver.find_element_by_xpath("""/html/body/storefront-root/storefront-home-page/div/main/storefront-family-bar/div/div/div[1]/div/storefront-link[1]/a""").click()
-        time.sleep(1)
-        driver.find_element_by_xpath("""//*[@id="group-link-services"]/span""").click()
-        time.sleep(1)
-        driver.save_screenshot("wow_services_" + language + ".png")
-    showinfo("Done","Screenshots saved!")
-
+def toggle_all_languages():
+    if language_all_var.get() == 1:
+        language_en_gb_var.set(1)
+        language_de_de_var.set(1)
+        language_fr_fr_var.set(1)
+        language_es_es_var.set(1)
+        language_it_it_var.set(1)
+        language_pt_br_var.set(1)
+        language_pl_pl_var.set(1)
+        language_ru_ru_var.set(1)
+    if language_all_var.get() == 0:
+        language_en_gb_var.set(0)
+        language_de_de_var.set(0)
+        language_fr_fr_var.set(0)
+        language_es_es_var.set(0)
+        language_it_it_var.set(0)
+        language_pt_br_var.set(0)
+        language_pl_pl_var.set(0)
+        language_ru_ru_var.set(0)
 
 main_window_of_gui = tkinter.Tk()
 main_window_of_gui.title("Screen-shooter WIP")
 main_window_of_gui.wm_attributes("-topmost", 1)
 
-label_empty_space = Label(main_window_of_gui ,text = "", width = 65)
-label_empty_space.grid(row = 0, column = 0, columnspan = 2)
+language_all_var = IntVar()
+language_en_gb_var = IntVar()
+language_de_de_var = IntVar()
+language_fr_fr_var = IntVar()
+language_es_es_var = IntVar()
+language_it_it_var = IntVar()
+language_pt_br_var = IntVar()
+language_pl_pl_var = IntVar()
+language_ru_ru_var = IntVar()
+
+#label_empty_space = Label(main_window_of_gui ,text = "", width = 65)
+#label_empty_space.grid(row = 0, column = 0, columnspan = 2)
+language_all_toggle = Checkbutton(main_window_of_gui, text="All languages", variable=language_all_var, command = toggle_all_languages)
+language_all_toggle.grid(row = 0, column = 8)
+language_en_gb_toggle = Checkbutton(main_window_of_gui, text="en-GB", variable=language_en_gb_var)
+language_en_gb_toggle.grid(row = 0, column = 0)
+language_de_de_toggle = Checkbutton(main_window_of_gui, text="de_DE", variable=language_de_de_var)
+language_de_de_toggle.grid(row = 0, column = 1)
+language_fr_fr_toggle = Checkbutton(main_window_of_gui, text="fr-FR", variable=language_fr_fr_var)
+language_fr_fr_toggle.grid(row = 0, column = 2)
+language_es_es_toggle = Checkbutton(main_window_of_gui, text="es-ES", variable=language_es_es_var)
+language_es_es_toggle.grid(row = 0, column = 3)
+language_it_it_toggle = Checkbutton(main_window_of_gui, text="it-IT", variable=language_it_it_var)
+language_it_it_toggle.grid(row = 0, column = 4)
+language_pt_br_toggle = Checkbutton(main_window_of_gui, text="pt-BR", variable=language_pt_br_var)
+language_pt_br_toggle.grid(row = 0, column = 5)
+language_pl_pl_toggle = Checkbutton(main_window_of_gui, text="pl-PL", variable=language_pl_pl_var)
+language_pl_pl_toggle.grid(row = 0, column = 6)
+language_ru_ru_toggle = Checkbutton(main_window_of_gui, text="ru-RU", variable=language_ru_ru_var)
+language_ru_ru_toggle.grid(row = 0, column = 7)
 button_add_action_row = Button(main_window_of_gui, text = "Add row", command = add_action_row)
-button_add_action_row.grid(row = 0, column = 5)
+button_add_action_row.grid(row = 1, column = 15)
 button_remove_action_row = Button(main_window_of_gui, text = "Remove row", command = remove_action_row)
-button_remove_action_row.grid(row = 0, column = 6)
+button_remove_action_row.grid(row = 1, column = 16)
 button_perform_actions = Button(main_window_of_gui, text = "Perform actions", height = 3, command = perform_actions)
-button_perform_actions.grid(row = 1, column = 5, rowspan = 3, columnspan = 2)
+button_perform_actions.grid(row = 2, column = 15, rowspan = 3, columnspan = 2)
 
 main_window_of_gui.mainloop()
 
