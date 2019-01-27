@@ -90,7 +90,7 @@ def enter_text(input_text):
 
 def create_browser():
     options = webdriver.ChromeOptions()
-    if 1 == 0:
+    if display_browser_var.get() == 0:
         options.add_argument('headless')
     options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36")
     driver = webdriver.Chrome(options=options)
@@ -133,9 +133,9 @@ def get_the_list_of_languages():
     if language_it_it_var.get() == 1:
         list_of_languages.append("/it-it")
     if language_pt_br_var.get() == 1:
-        list_of_languages.append("/pl-pl")
-    if language_pl_pl_var.get() == 1:
         list_of_languages.append("/pt-br")
+    if language_pl_pl_var.get() == 1:
+        list_of_languages.append("/pl-pl")
     if language_ru_ru_var.get() == 1:
         list_of_languages.append("/ru-ru")
     return list_of_languages
@@ -182,6 +182,8 @@ language_pt_br_var = IntVar()
 language_pl_pl_var = IntVar()
 language_ru_ru_var = IntVar()
 
+display_browser_var = IntVar()
+
 #label_empty_space = Label(main_window_of_gui ,text = "", width = 65)
 #label_empty_space.grid(row = 0, column = 0, columnspan = 2)
 language_all_toggle = Checkbutton(main_window_of_gui, text="All languages", variable=language_all_var, command = toggle_all_languages)
@@ -202,6 +204,10 @@ language_pl_pl_toggle = Checkbutton(main_window_of_gui, text="pl-PL", variable=l
 language_pl_pl_toggle.grid(row = 0, column = 6)
 language_ru_ru_toggle = Checkbutton(main_window_of_gui, text="ru-RU", variable=language_ru_ru_var)
 language_ru_ru_toggle.grid(row = 0, column = 7)
+
+display_browser_toggle = Checkbutton(main_window_of_gui, text="Display browser", variable=display_browser_var)
+display_browser_toggle.grid(row = 0, column = 16)
+
 button_add_action_row = Button(main_window_of_gui, text = "Add row", command = add_action_row)
 button_add_action_row.grid(row = 1, column = 15)
 button_remove_action_row = Button(main_window_of_gui, text = "Remove row", command = remove_action_row)
