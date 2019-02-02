@@ -45,12 +45,13 @@ dictionary_of_action_input_per_row = {}
 
 dictionary_of_sequences = {}
 
-list_of_actions = ["Open (URL)", "Click (Xpath)", "Send (text)", "Screenshot (save as)", "Wait (seconds)"]
+list_of_actions = ["Open (URL)", "Click (Xpath)", "Send (text)", "Screenshot (save as)", "Wait (seconds)", "Open (URL) +", "Click (Xpath) +", "Send (text) +", "Screenshot (save as) +"]
 
 #languages = ["/en-gb", "/de-de", "/fr-fr", "/es-es", "/it-it", "/pl-pl", "/pt-br", "/ru-ru"]
 
 def build_list_of_actions():
     global row_counter
+    list_of_complex_imputs = ["Open (URL) +", "Click (Xpath) +", "Send (text) +", "Screenshot (save as) +", "Language +", "Browser +"]
 
 
 
@@ -73,7 +74,7 @@ def add_action_row():
     dictionary_of_action_selector_variable_per_row[row_counter] = StringVar()
     dictionary_of_action_selector_variable_per_row[row_counter].set(list_of_actions[0])
     dictionary_of_action_selector_per_row[row_counter] = OptionMenu(main_window_of_gui, dictionary_of_action_selector_variable_per_row[row_counter], *list_of_actions)
-    dictionary_of_action_selector_per_row[row_counter].config(width=16)
+    dictionary_of_action_selector_per_row[row_counter].config(width=18)
     dictionary_of_action_selector_per_row[row_counter].grid(row = row_counter + 1, column = 1, columnspan = 3)
 
     dictionary_of_action_input_per_row[row_counter] = Entry(main_window_of_gui)
@@ -123,9 +124,17 @@ def create_browser():
     if display_browser_var.get() == 0:
         options.add_argument('headless')
         insert_text('Opening "hidden" browser.')
-    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36")
+    selected_language = ["en-us", "en-gb", "de-de", "fr-fr", "es-es", "it-it", "pl-pl", "pt-br", "pt-pt", "ru-ru", "ko-kr", "zh-tw", "ja-jp", "th-th"]
+    options.add_experimental_option('prefs', {'intl.accept_languages': selected_language[9]})
+    pc_browser = "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
+    pc_browser_width = 1920
+    pc_browser_height = 1080
+    mobile_browser = 'user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 10_3 like Mac OS X) AppleWebKit/602.1.50 (KHTML, like Gecko) CriOS/56.0.2924.75 Mobile/14E5239e Safari/602.1'
+    mobile_browser_width = 768
+    mobile_browser_height = 1024
+    options.add_argument(pc_browser)
     driver = webdriver.Chrome(options=options)
-    driver.set_window_size(1920, 1080)
+    driver.set_window_size(pc_browser_width, pc_browser_height)
     driver.implicitly_wait(10)
     return driver
 
