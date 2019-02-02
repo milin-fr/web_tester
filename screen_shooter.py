@@ -41,12 +41,17 @@ row_counter = 0
 dictionary_of_action_index_per_row = {}
 dictionary_of_action_selector_per_row = {}
 dictionary_of_action_selector_variable_per_row = {}
-
 dictionary_of_action_input_per_row = {}
 
-list_of_actions = ["Open (URL)", "Click (Xpath)", "Scroll to (Xpath)", "Send (text)", "Screenshot (save as)", "Wait (seconds)"]
+dictionary_of_sequences = {}
+
+list_of_actions = ["Open (URL)", "Click (Xpath)", "Send (text)", "Screenshot (save as)", "Wait (seconds)"]
 
 #languages = ["/en-gb", "/de-de", "/fr-fr", "/es-es", "/it-it", "/pl-pl", "/pt-br", "/ru-ru"]
+
+def build_list_of_actions():
+    global row_counter
+
 
 
 def remove_action_row():
@@ -100,13 +105,6 @@ def click_element(driver, line_number):
     insert_text("Clicking element with Xpath: " + element_to_click)
     driver.find_element_by_xpath(element_to_click).click()
 
-def scroll_to(driver, line_number):
-    #actions = ActionChains(driver)
-    element_to_scroll_to = dictionary_of_action_input_per_row[line_number].get()
-    insert_text("Scrolling to element with Xpath: " + element_to_scroll_to)
-    element = driver.find_element_by_xpath(element_to_scroll_to)
-    driver.execute_script("arguments[0].scrollIntoView();", element)
-
 def get_last_clicked_xpath(line_number):
     last_clicked_xpath = ""
     for i in range(line_number):
@@ -148,11 +146,6 @@ def single_action(driver, line_number, language):
             click_element(driver, line_number)
         except:
             insert_text("Was unable to click the element.")
-    if dictionary_of_action_selector_variable_per_row[line_number].get() == "Scroll to (Xpath)":
-        try:
-            scroll_to(driver, line_number)
-        except:
-            insert_text("Was unable to scroll to the element.")
     if dictionary_of_action_selector_variable_per_row[line_number].get() == "Send (text)":
         try:
             enter_text(driver, line_number)
