@@ -1,16 +1,7 @@
-import simplejson
+import webbrowser
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
 import time
-import random
-import sys
 import tkinter
 from tkinter import Label, Button, Entry, Checkbutton, OptionMenu, Canvas, Frame
 from tkinter import StringVar, IntVar
@@ -23,7 +14,6 @@ from tkinter import Toplevel
 from tkinter.filedialog import askopenfilename
 from threading import Thread
 from tkinter.messagebox import showinfo
-#from pywinauto.keyboard import SendKeys
 
 '''Below module allows us to interact with Windows files.'''
 import os
@@ -51,9 +41,8 @@ dictionary_of_action_selector_variable_per_row = {}
 dictionary_of_action_input_per_row = {}
 
 
-list_of_actions = ["Open (URL)", "Click (Xpath)", "Send (text)", "Screenshot (save as)", "Wait (seconds)", "Open (URL) +", "Click (Xpath) +", "Send (text) +", "Screenshot (save as) +"]
+list_of_actions = ["Open (URL)", "Click (Xpath)", "Send (text)", "Set resolution (width)", "Screenshot (save as)", "Wait (seconds)", "Open (URL) +", "Click (Xpath) +", "Send (text) +", "Screenshot (save as) +", "Set resolution (width) +"]
 list_of_browsers = ["PC browser 1920x1080", "Mobile browser 768x1204"]
-
 
 def get_files_in_script_directory():
     '''Get file names in directory'''
@@ -63,37 +52,78 @@ def get_files_in_script_directory():
             file_names.append(filename)
     return file_names
 
-def create_folder_for_screenshots(dictionary_of_sequences):
-    global SCREENSHOT_FOLDER_NAME
-    time_stamp_minutes = str(time.strftime("%m-%d %Hh%M"))
+def check_if_need_to_create_folder(dictionary_of_sequences):
     need_to_create_folder = 0
     for sequence in dictionary_of_sequences:
         for action, value in dictionary_of_sequences[sequence].items():
             if dictionary_of_sequences[sequence][action]["action"] == "Screenshot (save as)" or dictionary_of_sequences[sequence][action]["action"] == "Screenshot (save as) +":
                 need_to_create_folder = 1
-    if need_to_create_folder == 1:
+    return need_to_create_folder
+
+def create_single_folder():
+    global SCREENSHOT_FOLDER_NAME
+    provided_folder_name = entry_folder_name.get()
+    if provided_folder_name == "" or folder_name_option_var.get() == "Folder name +":
         try:
+            time_stamp_minutes = str(time.strftime("%m-%d %Hh%M"))
             SCREENSHOT_FOLDER_NAME = "./Screenshots " + time_stamp_minutes + "/"
             os.makedirs(SCREENSHOT_FOLDER_NAME)
         except:
             time_stamp_seconds = str(time.strftime("%Hh%Ms%S"))
             SCREENSHOT_FOLDER_NAME = "./Screenshots " + time_stamp_seconds + "/"
             os.makedirs(SCREENSHOT_FOLDER_NAME)
-        for sequence_index in dictionary_of_sequences:
-            os.makedirs(SCREENSHOT_FOLDER_NAME + "/" + str(sequence_index) + "/")
+    else:
+        try:
+            SCREENSHOT_FOLDER_NAME = "./" + provided_folder_name + "/"
+            os.makedirs(SCREENSHOT_FOLDER_NAME)
+        except:
+            time_stamp_minutes = str(time.strftime("%m-%d %Hh%M"))
+            SCREENSHOT_FOLDER_NAME = "./Screenshots " + time_stamp_minutes + "/"
+            os.makedirs(SCREENSHOT_FOLDER_NAME)
+
+
+def create_folders_for_screenshots_if_any_screenshots_are_taken(dictionary_of_sequences):
+    global SCREENSHOT_FOLDER_NAME
+    need_to_create_folder = check_if_need_to_create_folder(dictionary_of_sequences)
+    if need_to_create_folder == 1:
+        create_single_folder()
+        if folder_name_option_var.get() == "Folder name +":
+            list_of_subfolder_names = []
+            wb = load_workbook(test_sequence_source_excel)
+            ws = wb.worksheets[1]
+            needed_column = 0
+            current_column = 1
+            columns_to_check = ws.cell(row=1, column=current_column)
+            while columns_to_check.value != None:
+                if columns_to_check.value == entry_folder_name.get():
+                    needed_column = current_column
+                current_column += 1
+                columns_to_check = ws.cell(row=1, column=current_column)
+            needed_row = 2
+            needed_value_cell = ws.cell(row=needed_row, column=needed_column)
+            while needed_value_cell.value != None:
+                if needed_value_cell.value not in list_of_subfolder_names:
+                    list_of_subfolder_names.append(needed_value_cell.value)
+                needed_row += 1
+                needed_value_cell = ws.cell(row=needed_row, column=needed_column)
+            for sub_folder_name in list_of_subfolder_names:
+                try:
+                    os.makedirs(SCREENSHOT_FOLDER_NAME + sub_folder_name + "/")
+                except:
+                    insert_text("Was unable to create subfolder " + SCREENSHOT_FOLDER_NAME + sub_folder_name + "/")
 
 def look_up_action_value_from_excel(single_value, test_reiteration):
     wb = load_workbook(test_sequence_source_excel)
     ws = wb.worksheets[1]
     needed_column = 0
     needed_row = test_reiteration + 2
-    number_of_columns = 1
-    columns_to_check = ws.cell(row=1, column=number_of_columns)
+    current_column = 1
+    columns_to_check = ws.cell(row=1, column=current_column)
     while columns_to_check.value != None:
         if columns_to_check.value == single_value:
-            needed_column = number_of_columns
-        number_of_columns = number_of_columns + 1
-        columns_to_check = ws.cell(row=1, column=number_of_columns)
+            needed_column = current_column
+        current_column = current_column + 1
+        columns_to_check = ws.cell(row=1, column=current_column)
     needed_value_cell = ws.cell(row=needed_row, column=needed_column)
     while needed_value_cell.value == None:
         needed_row -= 1
@@ -122,9 +152,6 @@ def check_if_excel_file_is_selected_and_create_one_if_not():
 
 def get_the_number_of_test_sequences():
     number_of_test_sequences = 0
-    selected_language = language_option_var.get()
-    if selected_language == "language +":
-        check_if_excel_file_is_selected_and_create_one_if_not()
     try:
         wb = load_workbook(test_sequence_source_excel)
         ws = wb.worksheets[1]
@@ -141,7 +168,7 @@ def get_the_number_of_test_sequences():
                 rows_to_check = ws.cell(row=number_of_rows, column=column_to_check)
             if number_of_test_sequences < number_of_rows:
                 number_of_test_sequences = number_of_rows
-        number_of_test_sequences -= 1
+        number_of_test_sequences -= 2
     except:
         number_of_test_sequences = 1
     return number_of_test_sequences
@@ -149,7 +176,6 @@ def get_the_number_of_test_sequences():
 
 
 def remove_action_row():
-    #destroys all GUI elements (game selecetion and time selection buttons) created for given row
     global row_counter
     if row_counter > 0:
         row_counter -= 1
@@ -208,12 +234,6 @@ def create_browser(test_reiteration):
     if display_browser_var.get() == 0:
         options.add_argument('headless')
         insert_text('Opening "hidden" browser.')
-    selected_language = language_option_var.get()
-    if selected_language == "language +":
-        selected_language = look_up_action_value_from_excel("language", test_reiteration)
-        print(selected_language)
-    options.add_experimental_option('prefs', {'intl.accept_languages': selected_language})
-    insert_text('Setting browser default language to ' + selected_language + ".")
     if browser_type_var.get() == "PC browser 1920x1080":
         selected_browser = pc_browser
         selected_width = pc_browser_width
@@ -228,15 +248,26 @@ def create_browser(test_reiteration):
     driver.implicitly_wait(10)
     return driver
 
+def set_resolution(driver, value):
+    web_browser_window_width = int(value)
+    web_browser_window_height = 1080
+    driver.set_window_size(web_browser_window_width, web_browser_window_height)
+
 def take_screenshot(driver, value, action_index, test_reiteration):
     global SCREENSHOT_FOLDER_NAME
-    time_stamp_seconds = str(time.strftime("%Hh%Ms%S"))
+    if folder_name_option_var.get() == "Folder name +":
+        sub_folder_name_look_up_key = entry_folder_name.get()
+        sub_folder_name = look_up_action_value_from_excel(sub_folder_name_look_up_key, test_reiteration)
+        save_to = SCREENSHOT_FOLDER_NAME + sub_folder_name + "/"
+    else:
+        save_to = SCREENSHOT_FOLDER_NAME
     screenshot_name = value
     if ".png" not in screenshot_name:
         screenshot_name += ".png"
-    screenshot_name = time_stamp_seconds + " " + str(action_index) + " " + screenshot_name
+    if dictionary_of_action_selector_variable_per_row[action_index].get() != "Screenshot (save as) +":
+        screenshot_name = str(test_reiteration + 1) + "-" + str(action_index + 1) + " " + screenshot_name
     insert_text("Taking screenshot: " + screenshot_name)
-    screenshot_name = SCREENSHOT_FOLDER_NAME + screenshot_name
+    screenshot_name = save_to + screenshot_name
     whole_page = driver.find_element_by_tag_name('body')
     whole_page.screenshot(screenshot_name)
 
@@ -247,35 +278,41 @@ def single_action(driver, action_value_tuple, dictionary_of_current_test_itirati
         try:
             go_to(driver, value)
         except:
-            insert_text("Was unable to open " + value)
+            insert_text("Run number " + str(test_reiteration) + ". Was unable to open " + value)
     if action == "Click (Xpath)" or action == "Click (Xpath) +":
         try:
             click_element(driver, value)
         except:
-            insert_text("Was unable to click " + value)
+            insert_text("Run number " + str(test_reiteration) + ". Was unable to click " + value)
     if action == "Send (text)" or action == "Send (text) +":
         try:
             enter_text(driver, value, dictionary_of_current_test_itiration, action_index)
         except:
-            insert_text("Was unable to write " + value)
+            insert_text("Run number " + str(test_reiteration) + ". Was unable to write " + value)
+    if action == "Set resolution (width)":
+        try:
+            set_resolution(driver, value)
+        except:
+            insert_text("Run number " + str(test_reiteration) + ". Was unable to set resolution width to " + value)
     if action == "Screenshot (save as)" or action == "Screenshot (save as) +":
         try:
             take_screenshot(driver, value, action_index, test_reiteration)
         except:
-            insert_text("Was unable to take screenshot " + value)
+            insert_text("Run number " + str(test_reiteration) + ". Was unable to take screenshot " + value)
     if action == "Wait (seconds)":
-        time.sleep(int(value))
-
-"""
-    def slow_magic():
-    executing = Thread(target=slow_magic)
-    executing.start()
-"""
+        try:
+            time.sleep(int(value))
+        except:
+            insert_text("Run number " + str(test_reiteration) + ". Was unable to wait " + str(value) + " second(s).")
 
 def perform_actions(dictionary_of_current_test_itiration, test_reiteration):
+    global stop_test
     driver = create_browser(test_reiteration)
     for action_index, action_value_tuple in dictionary_of_current_test_itiration.items():
-        single_action(driver, action_value_tuple, dictionary_of_current_test_itiration, action_index, test_reiteration)
+        if stop_test == 0: 
+            single_action(driver, action_value_tuple, dictionary_of_current_test_itiration, action_index, test_reiteration)
+        else:
+            insert_text("/!\\ Sequence aborted /!\\")
     driver.quit()
 
 
@@ -292,19 +329,11 @@ def save_testing_sequence(entry_test_sequence_name, popup_provide_test_sequence_
     test_sequence_name = entry_test_sequence_name.get()
     wb = Workbook()
     ws = wb.worksheets[0]
+    ws.cell(row=1, column=1, value=folder_name_option_var.get())
+    ws.cell(row=1, column=2, value=entry_folder_name.get())
     for line_number in range(row_counter):
-        ws.cell(row=(line_number + 1), column=1, value=dictionary_of_action_selector_variable_per_row[line_number].get())
-        ws.cell(row=(line_number + 1), column=2, value=dictionary_of_action_input_per_row[line_number].get())
-    list_of_single_languages = ["en-us", "en-gb", "de-de", "fr-fr", "es-es", "it-it", "pl-pl", "pt-br", "pt-pt", "ru-ru", "ko-kr", "zh-tw", "ja-jp", "th-th"]
-    selected_language = language_option_var.get()
-    if selected_language == "language +":
-        wb.create_sheet()
-        ws = wb.worksheets[1]
-        ws.cell(row=1, column=1, value="language")
-        next_row = 2
-        for single_language in list_of_single_languages:
-            ws.cell(row=next_row, column=1, value=single_language)
-            next_row +=1
+        ws.cell(row=(line_number + 2), column=1, value=dictionary_of_action_selector_variable_per_row[line_number].get())
+        ws.cell(row=(line_number + 2), column=2, value=dictionary_of_action_input_per_row[line_number].get())
     if ".xlsx" not in test_sequence_name:
         test_sequence_name += ".xlsx"
     wb.save(test_sequence_name)
@@ -345,10 +374,17 @@ def build_test_sequence_with_import():
     while row_counter > 0:
         remove_action_row()
     number_of_lines, ws = find_the_row_of_the_next_empty_cell()
-    for line in range(number_of_lines - 1):
+    folder_name_option_var.set(ws.cell(row=1, column=1).value)
+    entry_folder_name.delete(0,'end')
+    try:
+        entry_folder_name.insert(0, ws.cell(row=1, column=2).value)
+    except:
+        entry_folder_name.insert(0, "")
+    for line in range(number_of_lines - 2):
         add_action_row()
-        dictionary_of_action_selector_variable_per_row[line].set(ws.cell(row=line+1, column=1).value)
-        dictionary_of_action_input_per_row[line].insert(0, ws.cell(row=line+1, column=2).value)
+        dictionary_of_action_selector_variable_per_row[line].set(ws.cell(row=line+2, column=1).value)
+        dictionary_of_action_input_per_row[line].insert(0, ws.cell(row=line+2, column=2).value)
+    
 
 def choose_test_sequence_source_excel():
     global test_sequence_source_excel
@@ -356,25 +392,9 @@ def choose_test_sequence_source_excel():
     build_test_sequence_with_import()
 
 def stop_the_test():
+    insert_text("Aborting current run!")
     global stop_test
     stop_test = 1
-
-#def running_threads(ai_response):
-#threads = []
-#for i in range(10):
-#t = Thread(target = get_article_name, args = (ai_response, i))
-#threads.append(t)
-#t.start()
-#for t in threads:t.join()
-#
-#def get_article_name(ai_response, i):
-#try:
-#page_content = request.urlopen("https://battle.net/support/article/" + str(ai_response["suggestedArticles"][i]["articleNumber"]))
-#soup = BeautifulSoup(page_content, 'html.parser')
-#article_name[order]= soup.find(class_="section-header").text
-#except:
-#article_name[order]= "Internal article " + str(ai_response["suggestedArticles"][i]["articleNumber"])
-
 
 def run_selected_actions():
     def slow_magic():
@@ -388,32 +408,39 @@ def run_selected_actions():
         number_of_test_sequences = get_the_number_of_test_sequences()
         for test_reiteration in range(number_of_test_sequences):
             dictionary_of_sequences[test_reiteration] = build_single_test_sequence(test_reiteration)
-        create_folder_for_screenshots(dictionary_of_sequences)
+        create_folders_for_screenshots_if_any_screenshots_are_taken(dictionary_of_sequences)
         for test_reiteration in range(number_of_test_sequences):
-            if stop_test == 0:
-                t = Thread(target = perform_actions, args = (dictionary_of_sequences[test_reiteration], test_reiteration))
-                list_of_sequences.append(t)
-                t.start()
-                #perform_actions(dictionary_of_sequences[test_reiteration], test_reiteration)
-            else:
-                insert_text("/!\\ Sequence aborted /!\\")
+            t = Thread(target = perform_actions, args = (dictionary_of_sequences[test_reiteration], test_reiteration))
+            list_of_sequences.append(t)
+            t.start()
         for t in list_of_sequences:t.join()
         insert_text("****************** ALL ACTIONS PERFORMED ******************")
     executing = Thread(target=slow_magic)
     executing.start()
 
-"""
-    def slow_magic():
-    executing = Thread(target=slow_magic)
-    executing.start()
-"""
+def _onKeyRelease(event):
+    ctrl  = (event.state & 0x4) != 0
+    if event.keycode==88 and  ctrl and event.keysym.lower() != "x": 
+        event.widget.event_generate("<<Cut>>")
+
+    if event.keycode==86 and  ctrl and event.keysym.lower() != "v": 
+        event.widget.event_generate("<<Paste>>")
+
+    if event.keycode==67 and  ctrl and event.keysym.lower() != "c":
+        event.widget.event_generate("<<Copy>>")
+
+    if event.keycode==65 and  ctrl and event.keysym.lower() != "a":
+        event.widget.event_generate("<<SelectAll>>")
 
 main_window_of_gui = tkinter.Tk()
-main_window_of_gui.title("Screen-shooter v05/02/2019")
+main_window_of_gui.title("Screen-shooter v19/02/2019")
 main_window_of_gui.wm_attributes("-topmost", 1)
 
-language_option_var = StringVar()
-language_option_list = ["en-us", "en-gb", "de-de", "fr-fr", "es-es", "it-it", "pl-pl", "pt-br", "pt-pt", "ru-ru", "ko-kr", "zh-tw", "ja-jp", "th-th", "language +"]
+
+main_window_of_gui.bind_all("<Key>", _onKeyRelease, "+")
+
+folder_name_option_var = StringVar()
+folder_name_option_list = ["Folder name", "Folder name +"]
 
 browser_type_var = StringVar()
 display_browser_var = IntVar()
@@ -421,21 +448,23 @@ display_browser_var = IntVar()
 display_browser_toggle = Checkbutton(main_window_of_gui, text="Display browser", variable=display_browser_var)
 display_browser_toggle.grid(row = 0, column = 0, columnspan = 2)
 
-label_language = Label(main_window_of_gui, text = "Select default browser language: ")
-label_language.grid(row = 1, column = 0, columnspan = 2)
-
-language_option_var.set(language_option_list[0])
-drop_down_language = OptionMenu(main_window_of_gui, language_option_var, *language_option_list)
-drop_down_language.config(width = 22)
-drop_down_language.grid(row = 1, column = 2, columnspan = 1)
-
 label_browser = Label(main_window_of_gui, text = "Select browser type: ")
-label_browser.grid(row = 2, column = 0, columnspan = 2)
+label_browser.grid(row = 1, column = 0, columnspan = 2)
 
 browser_type_var.set(list_of_browsers[0])
 drop_down_browser_type = OptionMenu(main_window_of_gui, browser_type_var, *list_of_browsers)
 drop_down_browser_type.config(width = 22)
-drop_down_browser_type.grid(row = 2, column = 2, columnspan = 1)
+drop_down_browser_type.grid(row = 1, column = 2, columnspan = 1)
+
+
+folder_name_option_var.set(folder_name_option_list[0])
+drop_down_folder_name = OptionMenu(main_window_of_gui, folder_name_option_var, *folder_name_option_list)
+drop_down_folder_name.config(width=18)
+drop_down_folder_name.grid(row = 2, column = 1, columnspan = 1)
+
+entry_folder_name = Entry(main_window_of_gui)
+entry_folder_name.config(width=55)
+entry_folder_name.grid(row = 2, column = 2, columnspan = 1)
 
 button_add_action_row = Button(main_window_of_gui, text = "Add row", width = 16, height = 3, command = add_action_row)
 button_add_action_row.grid(row = 0, column = 2, columnspan = 2)
@@ -463,7 +492,7 @@ button_save_testing_sequence.grid(row = 0, column = 7, rowspan = 1, columnspan =
 button_load_testing_sequence = Button(main_window_of_gui, text = "Load tests", width = 16, height = 3, command = choose_test_sequence_source_excel)
 button_load_testing_sequence.grid(row = 0, column = 8, rowspan = 1, columnspan = 1)
 
-button_stop_the_test = Button(main_window_of_gui, text = "Cancel", width = 16, height = 3, command = stop_the_test)
+button_stop_the_test = Button(main_window_of_gui, text = "Cancel run", width = 16, height = 3, command = stop_the_test)
 button_stop_the_test.grid(row = 0, column = 9, rowspan = 1, columnspan = 1)
 
 main_window_of_gui.mainloop()
