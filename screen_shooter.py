@@ -125,9 +125,9 @@ def look_up_action_value_from_excel(single_value, test_reiteration):
         current_column = current_column + 1
         columns_to_check = ws.cell(row=1, column=current_column)
     needed_value_cell = ws.cell(row=needed_row, column=needed_column)
-    while needed_value_cell.value == None:
-        needed_row -= 1
-        needed_value_cell = ws.cell(row=needed_row, column=needed_column)
+    # while needed_value_cell.value == None: # this part would force to skip empty values
+    #    needed_row -= 1
+    #    needed_value_cell = ws.cell(row=needed_row, column=needed_column)
     return needed_value_cell.value
 
 
@@ -224,10 +224,8 @@ def enter_text(driver, value, dictionary_of_current_test_itiration, action_index
     driver.find_element_by_xpath(last_clicked_xpath).send_keys(input_text)
 
 def create_browser(test_reiteration):
-    pc_browser = "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
     pc_browser_width = 1920
     pc_browser_height = 1080
-    mobile_browser = 'user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 10_3 like Mac OS X) AppleWebKit/602.1.50 (KHTML, like Gecko) CriOS/56.0.2924.75 Mobile/14E5239e Safari/602.1'
     mobile_browser_width = 768
     mobile_browser_height = 1024
     options = webdriver.ChromeOptions()
@@ -235,14 +233,11 @@ def create_browser(test_reiteration):
         options.add_argument('headless')
         insert_text('Opening "hidden" browser.')
     if browser_type_var.get() == "PC browser 1920x1080":
-        selected_browser = pc_browser
         selected_width = pc_browser_width
         selected_height = pc_browser_height
     if browser_type_var.get() == "Mobile browser 768x1204":
-        selected_browser = mobile_browser
         selected_width = mobile_browser_width
         selected_height = mobile_browser_height
-    options.add_argument(selected_browser)
     driver = webdriver.Chrome(options=options)
     driver.set_window_size(selected_width, selected_height)
     driver.implicitly_wait(10)
@@ -273,7 +268,7 @@ def take_screenshot(driver, value, action_index, test_reiteration):
 
 def single_action(driver, action_value_tuple, dictionary_of_current_test_itiration, action_index, test_reiteration):
     action = action_value_tuple["action"]
-    value = action_value_tuple["value"]
+    value = str(action_value_tuple["value"])
     if action == "Open (URL)" or action == "Open (URL) +":
         try:
             go_to(driver, value)
