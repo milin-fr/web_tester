@@ -41,7 +41,7 @@ dictionary_of_action_selector_variable_per_row = {}
 dictionary_of_action_input_per_row = {}
 
 
-list_of_actions = ["Open (URL)", "Click (Xpath)", "Send (text)", "Set resolution (width)", "Screenshot (save as)", "Wait (seconds)", "Open (URL) +", "Click (Xpath) +", "Send (text) +", "Screenshot (save as) +", "Set resolution (width) +"]
+list_of_actions = ["Open (URL)", "Click (CSS selector)", "Send (text)", "Set resolution (width)", "Screenshot (save as)", "Wait (seconds)", "Open (URL) +", "Click (CSS selector) +", "Send (text) +", "Screenshot (save as) +", "Set resolution (width) +"]
 list_of_browsers = ["PC browser 1920x1080", "Mobile browser 768x1204"]
 
 def get_files_in_script_directory():
@@ -132,7 +132,7 @@ def look_up_action_value_from_excel(single_value, test_reiteration):
 
 
 def build_single_test_sequence(test_reiteration):
-    list_of_complex_inputs = ["Open (URL) +", "Click (Xpath) +", "Send (text) +", "Screenshot (save as) +", "Language +", "Browser +"]
+    list_of_complex_inputs = ["Open (URL) +", "Click (CSS selector) +", "Send (text) +", "Screenshot (save as) +", "Language +", "Browser +"]
     dictionary_of_single_test_sequence = {}
     for i in range(row_counter):
         dictionary_of_single_test_sequence[i] = {}
@@ -208,20 +208,20 @@ def go_to(driver, value):
 
 def click_element(driver, value):
     insert_text("Clicking " + value)
-    driver.find_element_by_xpath(value).click()
+    driver.find_element_by_css_selector(value).click()
 
-def get_last_clicked_xpath(dictionary_of_current_test_itiration, action_index):
-    last_clicked_xpath = ""
+def get_last_clicked_selector(dictionary_of_current_test_itiration, action_index):
+    last_clicked_selector = ""
     for i in range(action_index):
-        if dictionary_of_current_test_itiration[i]["action"] == "Click (Xpath)" or dictionary_of_current_test_itiration[i]["action"] == "Click (Xpath) +":
-            last_clicked_xpath = dictionary_of_current_test_itiration[i]["value"]
-    return last_clicked_xpath
+        if dictionary_of_current_test_itiration[i]["action"] == "Click (CSS selector)" or dictionary_of_current_test_itiration[i]["action"] == "Click (CSS selector) +":
+            last_clicked_selector = dictionary_of_current_test_itiration[i]["value"]
+    return last_clicked_selector
 
 def enter_text(driver, value, dictionary_of_current_test_itiration, action_index):
-    last_clicked_xpath = get_last_clicked_xpath(dictionary_of_current_test_itiration, action_index)
+    last_clicked_selector = get_last_clicked_selector(dictionary_of_current_test_itiration, action_index)
     input_text = value
-    insert_text("Typing " + '"' + input_text + '"' + " in element " + last_clicked_xpath)
-    driver.find_element_by_xpath(last_clicked_xpath).send_keys(input_text)
+    insert_text("Typing " + '"' + input_text + '"' + " in element " + last_clicked_selector)
+    driver.find_element_by_css_selector(last_clicked_selector).send_keys(input_text)
 
 def create_browser(test_reiteration):
     pc_browser_width = 1920
@@ -240,7 +240,7 @@ def create_browser(test_reiteration):
         selected_height = mobile_browser_height
     driver = webdriver.Chrome(options=options)
     driver.set_window_size(selected_width, selected_height)
-    driver.implicitly_wait(10)
+    driver.implicitly_wait(3)
     return driver
 
 def set_resolution(driver, value):
@@ -274,7 +274,7 @@ def single_action(driver, action_value_tuple, dictionary_of_current_test_itirati
             go_to(driver, value)
         except:
             insert_text("Run number " + str(test_reiteration) + ". Was unable to open " + value)
-    if action == "Click (Xpath)" or action == "Click (Xpath) +":
+    if action == "Click (CSS selector)" or action == "Click (CSS selector) +":
         try:
             click_element(driver, value)
         except:
@@ -294,7 +294,7 @@ def single_action(driver, action_value_tuple, dictionary_of_current_test_itirati
             take_screenshot(driver, value, action_index, test_reiteration)
         except:
             insert_text("Run number " + str(test_reiteration) + ". Was unable to take screenshot " + value)
-    if action == "Wait (seconds)":
+    if "Wait" in action:
         try:
             time.sleep(int(value))
         except:
@@ -304,7 +304,7 @@ def perform_actions(dictionary_of_current_test_itiration, test_reiteration):
     global stop_test
     driver = create_browser(test_reiteration)
     for action_index, action_value_tuple in dictionary_of_current_test_itiration.items():
-        if stop_test == 0: 
+        if stop_test == 0:
             single_action(driver, action_value_tuple, dictionary_of_current_test_itiration, action_index, test_reiteration)
         else:
             insert_text("/!\\ Sequence aborted /!\\")
@@ -428,7 +428,7 @@ def _onKeyRelease(event):
         event.widget.event_generate("<<SelectAll>>")
 
 main_window_of_gui = tkinter.Tk()
-main_window_of_gui.title("Screen-shooter v19/02/2019")
+main_window_of_gui.title("Screen-shooter v18/03/2020")
 main_window_of_gui.wm_attributes("-topmost", 1)
 
 
