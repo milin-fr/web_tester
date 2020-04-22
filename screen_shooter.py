@@ -225,9 +225,9 @@ def enter_text(driver, value, dictionary_of_current_test_itiration, action_index
 
 def create_browser(test_reiteration):
     pc_browser_width = 1920
-    pc_browser_height = 1080
+    pc_browser_height = 6000
     mobile_browser_width = 768
-    mobile_browser_height = 1024
+    mobile_browser_height = 6000
     options = webdriver.ChromeOptions()
     if display_browser_var.get() == 0:
         options.add_argument('headless')
@@ -245,7 +245,7 @@ def create_browser(test_reiteration):
 
 def set_resolution(driver, value):
     web_browser_window_width = int(value)
-    web_browser_window_height = 1080
+    web_browser_window_height = 10000
     driver.set_window_size(web_browser_window_width, web_browser_window_height)
 
 def take_screenshot(driver, value, action_index, test_reiteration):
