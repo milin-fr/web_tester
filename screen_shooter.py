@@ -240,7 +240,7 @@ def create_browser(test_reiteration):
         selected_height = mobile_browser_height
     driver = webdriver.Chrome(options=options)
     driver.set_window_size(selected_width, selected_height)
-    driver.implicitly_wait(3)
+    driver.implicitly_wait(1)
     return driver
 
 def set_resolution(driver, value):
