@@ -1,4 +1,4 @@
-Une application en Python pour automatiser des interactions avec les pages Web.
+Une application screen_shooter.py pour automatiser des interactions avec les pages Web. chromedriver.exe doit être dans le même dossier que l’application pour pouvoir s’exécuter.
 
 L’application permet d’éditer une liste de taches qui vont être exécutés dans un navigateur-test. On peut ouvrir des URL, cliquer sur les éléments de la page en ciblant des sélecteur CSS, envoyer du texte dans les champs ciblés et prendre des captures d’écran au moment voulu. On peut exporter la séquence de test vers un tableur (Excel ou LibreOffice par exemple). On peut éditer les séquences de test directement dans le tableur et les importer dans l’application.
 En appuyant sur « Add row » on ajoute une action à exécuter. On peut préciser une valeur pour cette action directement dans interface de logiciel : URL à ouvrir, sélecteur CSS à cibler, texte à envoyer.
